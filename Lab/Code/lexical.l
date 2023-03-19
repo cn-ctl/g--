@@ -7,11 +7,24 @@ letter [_a-zA-Z]
 digit [0-9]
 %%
 {delim}+ {}
+0[0-7]+ {
+     #ifdef TEST_lexical
+     printf("octal INT:%s\n",yytext);
+     #endif
+}
+0{digit}+ {
+     printf("Error type A at Line %d: Illegal octal number \'%s\'\n",yylineno,yytext);
+}
+0(x|X)[0-9a-fA-F]+ {
+     #ifdef TEST_lexical
+     printf("hexadecimal INT:%s\n",yytext);
+     #endif     
+}
 [1-9]{digit}*|0 {
-                  #ifdef TEST_lexical 
-                  printf("INT:%s\n",yytext);
-                  #endif
-                 }
+     #ifdef TEST_lexical 
+     printf("INT:%s\n",yytext);
+     #endif
+}
 ([1-9]{digit}*|0).({digit}*[1-9]) {
 				   #ifdef TEST_lexical
 				   printf("FLOAT:%s\n",yytext);
