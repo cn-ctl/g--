@@ -32,7 +32,7 @@ bool checkAssign(Type left,Type right){
 }
 
 bool hasID(char* name,unsigned int index,Type* type,bool fun){
-    printf("finding %s\n",name);
+    //printf("finding %s\n",name);
     IDnode t = IDlist[index];
     while(t!=NULL){
         if(fun&&t->type->kind!=FUNCTION){
@@ -49,7 +49,7 @@ bool hasID(char* name,unsigned int index,Type* type,bool fun){
 }
 
 bool addID(char* name,unsigned int index,Type type){
-    printf("adding %s\n",name);
+    //printf("adding %s\n",name);
     if(type->kind !=FUNCTION && type->dec){
         type->dec = 0;
         return true;
@@ -57,6 +57,8 @@ bool addID(char* name,unsigned int index,Type type){
     if(type->kind == FUNCTION&&type->dec){
         Type funcType;
         if(hasID(name,index,&funcType,true)){
+            if(!checkAssign(funcType->func.ret,type->func.ret))
+                return false;
             ParaList x = funcType->func.para, y = type->func.para;
             while(x&&y){
                 if(checkAssign(x->type,y->type)){
@@ -70,6 +72,8 @@ bool addID(char* name,unsigned int index,Type type){
                 IDnode t = decFuncList;
                 while(t->next){
                     if(strcmp(name,t->name) == 0){
+                        if(!checkAssign(t->type->func.ret,type->func.ret))
+                            return false;
                         ParaList x = t->type->func.para, y = type->func.para;
                         while(x&&y){
                             if(checkAssign(x->type,y->type)){
@@ -82,6 +86,8 @@ bool addID(char* name,unsigned int index,Type type){
                 }
                 if(strcmp(name,t->name) == 0){
                     ParaList x = t->type->func.para, y = type->func.para;
+                    if(!checkAssign(t->type->func.ret,type->func.ret))
+                        return false;
                     while(x&&y){
                         if(checkAssign(x->type,y->type)){
                             x = x->next;y=y->next;
@@ -109,6 +115,8 @@ bool addID(char* name,unsigned int index,Type type){
             t = decFuncList;
             while(t){
                 if(strcmp(name,t->name) == 0){
+                    if(!checkAssign(t->type->func.ret,type->func.ret))
+                        {type->dec = true;return false;}
                     ParaList x = t->type->func.para, y = type->func.para;
                     while(x&&y){
                         if(checkAssign(x->type,y->type)){
@@ -549,7 +557,6 @@ void typeChecker(struct YYNODE* root){
                 thisField->type = root->type;
                 thisField->next = NULL;
                 if(fieldOfS){
-                    printf("tt\n");
                     while(fieldOfS->next!=NULL){
                         if(strcmp(fieldOfS->name,thisField->name) == 0){
                             printf("Error type 15 at Line %d: Redefined field \"%s\".\n",root->first_line,thisField->name);
@@ -584,7 +591,7 @@ void typeChecker(struct YYNODE* root){
         break;
     case INT: root->type = intType;break;
     case FLOAT: root->type = floatType;break;
-    default:
+    default:break;
     }
     while(son!=NULL){
         typeChecker(son);
