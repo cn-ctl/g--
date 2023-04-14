@@ -1,7 +1,7 @@
 #include <stdio.h>
 //#define YYDEBUG
 extern int yydebug;
-
+extern struct YYNODE* root;
 int main(int argc, char** argv)
 {
     if (argc <= 1) return 1;
@@ -16,5 +16,6 @@ int main(int argc, char** argv)
     yydebug =1 ;
     #endif
     yyparse();
+    typeCheck(root);
     return 0;
 }

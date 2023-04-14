@@ -13,10 +13,14 @@
           yycolumn += yyleng; \
           yylloc.last_column = yycolumn - 1;
      
-     #define YY_RET_VAL(type) \ 
+     #define YY_RET_VAL(type_) \ 
           yylval = (struct YYNODE*) malloc(sizeof(yynode)); \ 
-          yylval -> YYTYPE = type ; \ 
-          yylval -> TG = 0;
+          yylval -> YYTYPE = type_ ; \ 
+          yylval -> first_line = yylineno; \
+          yylval -> TG = 0; \
+          yylval -> next = NULL; \ 
+          yylval -> sons = NULL; \
+          yylval -> type = NULL;
      extern int toP;
 %}
 

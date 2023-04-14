@@ -1,35 +1,23 @@
 %locations
 %{  
-    typedef struct YYNODE{
-        int YYTYPE;
-        int TG;
-        int first_line;
-        union {
-            float val_float;
-            int val_int;
-            char* val_type;
-            char* val_ID;
-            char* val_relop;
-        };
-        struct YYNODE* next, * sons;
-    }yynode;
-    #define YY_TREE_ACTION($$,k,$1,yytype) \ 
-        $$ = (struct YYNODE*) malloc(sizeof(yynode)); \ 
-        $$->first_line = k.first_line; \ 
-        $$->sons = $1; \ 
-        $$->YYTYPE = YYSYMBOL_##yytype ;  \
-        $$->TG = 1;
+    #include"g--.h"
     #define YYSTYPE struct YYNODE*
+    #define YY_TREE_ACTION($$,k,$1,yytype) \
+        $$ = (struct YYNODE*) malloc(sizeof(struct YYNODE)); \
+        $$->first_line = k.first_line; \
+        $$->sons = $1; \
+        $$->YYTYPE = YYSYMBOL_##yytype ;  \
+        $$->TG = 1; \
+        $$->next = NULL; \
+        $$->type = NULL;
     #include "lex.yy.c"
     #include <stdio.h>
-    #define YYDEBUG 1
+    //#define YYDEBUG 1
     #define caseToken(token) case YYSYMBOL_##token : return #token ; break;
     void PrintTree(struct YYNODE* root,int depth);
-    char* enum2s(int val);
-    #define true 1
-    #define false 0
-    int toP = true;
-        
+    int toP = false;
+    //toP = true;
+    struct YYNODE* root;
 %}
 
 %token INT
@@ -63,7 +51,7 @@
 %left LP RP LB RB DOT
 
 %%
-Program : ExtDefList {YY_TREE_ACTION($$,@$,$1,Program)if(toP)PrintTree($$,0);}
+Program : ExtDefList {YY_TREE_ACTION($$,@$,$1,Program)root = $$;if(toP)PrintTree($$,0);}
     ;
 ExtDefList : ExtDef ExtDefList {YY_TREE_ACTION($$,@$,$1,ExtDefList) if($1)$1->next = $2;}
     |   {$$ = NULL;}
@@ -71,6 +59,7 @@ ExtDefList : ExtDef ExtDefList {YY_TREE_ACTION($$,@$,$1,ExtDefList) if($1)$1->ne
 ExtDef : Specifier ExtDecList SEMI {YY_TREE_ACTION($$,@$,$1,ExtDef) $1->next = $2;$2->next = $3;}
     | Specifier SEMI {YY_TREE_ACTION($$,@$,$1,ExtDef) $1->next = $2;}
     | Specifier FunDec CompSt {YY_TREE_ACTION($$,@$,$1,ExtDef) $1->next = $2;$2->next = $3;}
+    | Specifier FunDec SEMI {YY_TREE_ACTION($$,@$,$1,ExtDef) $1->next = $2;$2->next = $3;}
     | error {$$ =  NULL;toP = false;}
     | error SEMI{$$ =  NULL;toP = false;}
     ;
@@ -183,7 +172,7 @@ yyerror(char* msg) {
     fprintf(stdout, "Error type B at Line %d: %s at \'%s\'\n", yylineno ,msg,yytext);
 }
 
-char* enum2s(int val){
+static char* enum2s(int val){
     switch(val){
         case INT:return "INT";break;
         case FLOAT:return "FLOAT";break;
