@@ -3,7 +3,7 @@
 
 #define new(obj) (struct obj *)malloc(sizeof(struct obj))
 #define newOp (Operand)malloc(sizeof(struct Operand_))
-#define DEBUGIR
+//#define DEBUGIR
 bool tranlateError = false;
 
 varIDnode varIDlist[0x3fff];
