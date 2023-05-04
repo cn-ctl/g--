@@ -130,6 +130,13 @@ Operand newOpA(char* var_name){
     return ret;
 }
 
+Operand newOpR(char* var_name){
+    Operand ret = newOp;
+    ret->kind = REFER;
+    ret->u.var_name = var_name;
+    return ret;
+}
+
 char* newTemp(){
     char* newName = (char*)malloc(sizeof(char)*10);
     sprintf(newName,"t%d",tempCount++);
@@ -170,6 +177,14 @@ struct InterCodes* newNodeAVA(char* v1,char* v2){
     ret->code.kind = ASSIGN;
     ret->code.u.assign.left = newOpV(v1);
     ret->code.u.assign.right = newOpA(v2);
+    return ret;
+}
+
+struct InterCodes* newNodeAVR(char* v1,char* v2){
+    struct InterCodes* ret = newNode();
+    ret->code.kind = ASSIGN;
+    ret->code.u.assign.left = newOpV(v1);
+    ret->code.u.assign.right = newOpR(v2);
     return ret;
 }
 
@@ -385,7 +400,7 @@ struct InterCodes* translate_CompSt(struct YYNODE* CompSt){
     #endif
     struct InterCodes* ret = NULL;
     struct YYNODE* son = CompSt->sons->next;
-    struct InterCodes* code1,*code2;
+    struct InterCodes* code1 = NULL,*code2 = NULL;
     if(son->YYTYPE == YYSYMBOL_DefList){
         code1 =translate_Def(son);
         code2 = translate_StmtList(son->next);
@@ -400,7 +415,7 @@ struct InterCodes* translate_StmtList(struct YYNODE* StmtList){
     #ifdef DEBUGIR
         printf("StmtList\n");
     #endif
-    if(StmtList == NULL||StmtList->sons == NULL)
+    if(StmtList == NULL)
         return NULL;
     struct YYNODE* son = StmtList->sons;
     struct InterCodes* code1 = translate_Stmt(son),
@@ -416,13 +431,14 @@ struct InterCodes* translate_Def(struct YYNODE* Def){
     if(Def == NULL)
         return NULL;
     struct YYNODE* son = Def->sons;
-    if(son == NULL)
-        return NULL;
     struct InterCodes* ret = NULL;
     son = son->sons;
     int size = translate_Specifier(son);
     son = son->next;
-    ret = translate_Dec(son,size);
+    struct InterCodes* code1 = translate_Dec(son,size)
+        ,*code2 = translate_Def(Def->sons->next);
+    ret = catNode(code1, code2);
+    
     return ret;
 }
 
@@ -436,18 +452,25 @@ struct InterCodes* translate_Dec(struct YYNODE* Dec,int size){
     if(son->sons->YYTYPE == ID){//singlevar
         id = lookUp(son->sons->val_ID);
         if(size!=4){
+            char* t1 = newTemp();
+            struct InterCodes* code1 = newNodeDec(t1,size)
+                ,*code2 = newNodeAVR(id,t1);
             ret = newNodeDec(id,size);
         }
     }else{//array
         id = lookUp(son->sons->sons->val_ID);
         int num = son->sons->next->next->val_int;
-        addArray(id,size);
-        ret = newNodeDec(id,size*num);
+        char* t1 = newTemp();
+        struct InterCodes* code1 = newNodeDec(t1,size*num)
+            ,*code2 = newNodeAVR(id,t1);
+        addArray(son->sons->sons->val_ID,size);
+        ret = catNode(code1,code2);
     }
     if(son->next){
         char* t1 = newTemp();
-        ret = catNode(ret,translate_Exp(son->next->next,t1));
-        ret = catNode(ret,newNodeAVV(id,t1));
+        struct InterCodes* code1 = translate_Exp(son->next->next,t1)
+            ,*code2 = newNodeAVV(id,t1);
+        ret = catNode(ret,catNode(code1,code2));
     }
     if(Dec->sons->next){
         ret = catNode(ret,translate_Dec(Dec->sons->next->next,size));
@@ -564,9 +587,11 @@ int translate_Specifier(struct YYNODE* Spe){
 
 int translate_StrDef(struct YYNODE* StrD,int offset){
     #ifdef DEBUGIR
-        printf("StrD\n");
+        printf("StrDef\n");
     #endif
-    int ret;
+    int ret = offset;
+    if(StrD == NULL)
+        return ret;
     struct YYNODE* son = StrD->sons;
     if (StrD->YYTYPE == YYSYMBOL_Def){
         int size = translate_Specifier(son);
@@ -771,7 +796,19 @@ struct InterCodes* translate_Exp(struct YYNODE* Exp,char* place){
             ret = catNode(code1,catNode(code2,code3));
             break;
         }
-        case LB:case DOT:{
+        case LB:{
+            char* t1 = newTemp();
+            struct InterCodes* code1 = lookUpExp(Exp,t1)
+                ,*code2;
+            if(sizeElem(Exp->sons) == 4){
+                code2 = newNodeAVA(place,t1);
+            }else {
+                code2 = newNodeAVV(place,t1);
+            }
+            ret = catNode(code1,code2);
+            break;
+        }
+        case DOT:{
             char* t1 = newTemp();
             struct InterCodes* code1 = lookUpExp(Exp,t1)
                 ,*code2 = newNodeAVA(place,t1);
@@ -851,8 +888,10 @@ void op(Operand op,char* s){
         sprintf(s,"%s",op->u.var_name);
     }else if(op->kind == CONSTANT){
         sprintf(s,"#%d",op->u.value);
-    }else{
+    }else if(op->kind == ADDRESS){
         sprintf(s,"*%s",op->u.var_name);
+    }else{
+        sprintf(s,"&%s",op->u.var_name);
     }
 }
 
@@ -879,9 +918,13 @@ void printIR(struct InterCodes* ir,FILE* f){
         fprintf(f,"%s := %s %c %s\n",res,op1,fours[ir->code.kind-1],op2);
         break;
     }
-    case LABEL: case GOTO:case RET:case READ:case WRITE:
-    case ARG: case FUNC:case PARAM:{
+     case GOTO:case RET:case READ:case WRITE:
+    case ARG: case PARAM:{
         fprintf(f,"%s %s\n",fomat[ir->code.kind-5],ir->code.u.label);
+        break; 
+    }
+    case LABEL: case FUNC:{
+        fprintf(f,"%s %s :\n",fomat[ir->code.kind-5],ir->code.u.label);
         break; 
     }
     case DEC:{
@@ -913,6 +956,9 @@ void translate(struct YYNODE* root,char* file){
     struct InterCodes* IR = newNode();
     IR->code.kind = -1;
     IR = catNode(translate_Default(root),IR);
+    #ifdef DEBUGIR
+    printf("finish\n");
+    #endif
     if(!tranlateError){
         FILE* f = fopen(file, "w");
         while(IR->code.kind!=-1){

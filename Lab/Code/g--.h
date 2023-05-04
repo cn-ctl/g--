@@ -107,7 +107,7 @@ struct IDnode_
 //DS4IR
 typedef struct Operand_* Operand;
 struct Operand_ {
-  enum { VARIABLE, CONSTANT, ADDRESS } kind;
+  enum { VARIABLE, CONSTANT, ADDRESS, REFER } kind;
   union {
     char* var_name;
     int value;

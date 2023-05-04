@@ -256,9 +256,10 @@ void typeChecker(struct YYNODE* root){
             son = son->next->next;
             typeChecker(son);
             Type right = son->type;
-            if(!checkAssign(left,right))
+            if(!checkAssign(left,right)){
                 hasError = true;
                 printf("Error type 5 at Line %d: Type mismatched for assignment.\n",root->first_line);
+            }
         }
         son=son->next;
         break;
