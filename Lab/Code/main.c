@@ -17,5 +17,6 @@ int main(int argc, char** argv)
     #endif
     yyparse();
     typeCheck(root);
+    translate(root,argv[2]);
     return 0;
 }
