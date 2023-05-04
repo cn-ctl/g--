@@ -885,12 +885,24 @@ struct InterCodes* translate_Stmt(struct YYNODE* Stmt){
 
 void op(Operand op,char* s){
     if(op->kind == VARIABLE){
-        sprintf(s,"%s",op->u.var_name);
+        #ifdef DEBUGIR
+            printf("opv\n");
+        #endif
+        sprintf(s,"%s",op->u.var_name==NULL?"(null)":op->u.var_name);
     }else if(op->kind == CONSTANT){
+        #ifdef DEBUGIR
+            printf("opc\n");
+        #endif
         sprintf(s,"#%d",op->u.value);
     }else if(op->kind == ADDRESS){
+        #ifdef DEBUGIR
+            printf("opa\n");
+        #endif
         sprintf(s,"*%s",op->u.var_name);
     }else{
+        #ifdef DEBUGIR
+            printf("opr\n");
+        #endif
         sprintf(s,"&%s",op->u.var_name);
     }
 }
@@ -902,6 +914,9 @@ void printIR(struct InterCodes* ir,FILE* f){
     switch (ir->code.kind)
     {
     case ASSIGN:{
+        #ifdef DEBUGIR
+            printf("A\n");
+        #endif
         char left[10], right[10];
         op(ir->code.u.assign.left,left);
         op(ir->code.u.assign.right,right);
@@ -911,6 +926,9 @@ void printIR(struct InterCodes* ir,FILE* f){
         break;
     }
     case ADD: case SUB: case MUL: case DIVV:{
+        #ifdef DEBUGIR
+            printf("asmd\n");
+        #endif
         char res[10], op1[10], op2[10];
         op(ir->code.u.binop.result,res);
         op(ir->code.u.binop.op1,op1);
@@ -920,20 +938,32 @@ void printIR(struct InterCodes* ir,FILE* f){
     }
      case GOTO:case RET:case READ:case WRITE:
     case ARG: case PARAM:{
+        #ifdef DEBUGIR
+            printf("dasdsadsa\n");
+        #endif
         fprintf(f,"%s %s\n",fomat[ir->code.kind-5],ir->code.u.label);
         break; 
     }
     case LABEL: case FUNC:{
+        #ifdef DEBUGIR
+            printf("fl\n");
+        #endif
         fprintf(f,"%s %s :\n",fomat[ir->code.kind-5],ir->code.u.label);
         break; 
     }
     case DEC:{
+        #ifdef DEBUGIR
+            printf("d\n");
+        #endif
         char left[10];
         op(ir->code.u.assign.left,left);
         fprintf(f,"DEC %s %d\n",left,ir->code.u.assign.right->u.value);
         break;
     }
     case CALL:{
+        #ifdef DEBUGIR
+            printf("c\n");
+        #endif
         char left[10], right[10];
         op(ir->code.u.assign.left,left);
         op(ir->code.u.assign.right,right);
@@ -941,6 +971,9 @@ void printIR(struct InterCodes* ir,FILE* f){
         break;
     }
     case IFGOTO:{
+        #ifdef DEBUGIR
+            printf("ig\n");
+        #endif
         char left[10], right[10];
         op(ir->code.u.ifgoto.left,left);
         op(ir->code.u.ifgoto.right,right);
