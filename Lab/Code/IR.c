@@ -965,5 +965,7 @@ void translate(struct YYNODE* root,char* file){
             printIR(IR,f);
             IR=IR->next;
         }
+    }else{
+        printf("Cannot translate: Code contains variables or parameters of structure type.\n");
     }
 }
