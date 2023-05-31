@@ -1,6 +1,6 @@
 #include "syntax.tab.h"
 #include "g--.h"
-
+#define LAB4
 #define new(obj) (struct obj *)malloc(sizeof(struct obj))
 #define newOp (Operand)malloc(sizeof(struct Operand_))
 //#define DEBUGIR
@@ -883,6 +883,7 @@ struct InterCodes* translate_Stmt(struct YYNODE* Stmt){
     return ret;
 }
 
+#ifndef LAB4
 void op(Operand op,char* s){
     if(op->kind == VARIABLE){
         #ifdef DEBUGIR
@@ -910,6 +911,7 @@ void op(Operand op,char* s){
 char fours[] = "+-*/";
 char fomat[][9] = {"LABEL","GOTO","RETURN","READ","WRITE","ARG"
     ,"FUNCTION", "PARAM"};
+
 void printIR(struct InterCodes* ir,FILE* f){
     switch (ir->code.kind)
     {
@@ -984,6 +986,7 @@ void printIR(struct InterCodes* ir,FILE* f){
         break;
     }
 }
+#endif
 
 void translate(struct YYNODE* root,char* file){
     struct InterCodes* IR = newNode();
@@ -995,7 +998,11 @@ void translate(struct YYNODE* root,char* file){
     if(!tranlateError){
         FILE* f = fopen(file, "w");
         while(IR->code.kind!=-1){
+            #ifndef LAB4
             printIR(IR,f);
+            #else
+            IR2Mips(IR,f);
+            #endif
             IR=IR->next;
         }
     }else{

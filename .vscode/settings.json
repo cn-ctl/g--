@@ -4,6 +4,14 @@
         "compare": "c",
         "type_traits": "c",
         "limits": "c",
-        "new": "c"
+        "new": "c",
+        "optional": "c",
+        "istream": "c",
+        "ostream": "c",
+        "system_error": "c",
+        "array": "c",
+        "functional": "c",
+        "tuple": "c",
+        "utility": "c"
     }
 }
