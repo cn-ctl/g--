@@ -1,6 +1,7 @@
 #include "syntax.tab.h"
 #include "g--.h"
 #define LAB4
+//#define DEBUGLAB4
 #define new(obj) (struct obj *)malloc(sizeof(struct obj))
 #define newOp (Operand)malloc(sizeof(struct Operand_))
 //#define DEBUGIR
@@ -112,6 +113,8 @@ int lookUpField(char* src){
 Operand newOpV(char* var_name){
     Operand ret = newOp;
     ret->kind = VARIABLE;
+    if(var_name == NULL)
+        var_name = "t0";
     ret->u.var_name = var_name;
     return ret;
 }
@@ -551,7 +554,6 @@ struct InterCodes* translate_Param(struct YYNODE* Param){
     }else{
         char* id = lookUp(son->sons->val_ID);
         ret = newNodeParam(id);
-        lookUp(id);
     }
     if(next){
         ret = catNode(ret,translate_Param(next->next));
@@ -883,7 +885,6 @@ struct InterCodes* translate_Stmt(struct YYNODE* Stmt){
     return ret;
 }
 
-#ifndef LAB4
 void op(Operand op,char* s){
     if(op->kind == VARIABLE){
         #ifdef DEBUGIR
@@ -986,7 +987,7 @@ void printIR(struct InterCodes* ir,FILE* f){
         break;
     }
 }
-#endif
+
 
 void translate(struct YYNODE* root,char* file){
     struct InterCodes* IR = newNode();
@@ -997,7 +998,13 @@ void translate(struct YYNODE* root,char* file){
     #endif
     if(!tranlateError){
         FILE* f = fopen(file, "w");
+        #ifdef LAB4
+            MIPSinit(f,varCount,tempCount);
+        #endif
         while(IR->code.kind!=-1){
+            #ifdef DEBUGLAB4
+            printIR(IR,f);
+            #endif
             #ifndef LAB4
             printIR(IR,f);
             #else

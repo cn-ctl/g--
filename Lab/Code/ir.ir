@@ -1,0 +1,65 @@
+FUNCTION f1 :
+PARAM v1
+PARAM v2
+PARAM v3
+PARAM v4
+t1 := v1
+t2 := #1
+IF t1 == t2 GOTO l1
+GOTO l2
+LABEL l1 :
+t6 := v2
+t7 := #1000000
+t4 := t6 * t7
+t5 := v4
+t3 := t4 + t5
+WRITE t3
+t0 := #0
+GOTO l3
+LABEL l2 :
+t9 := v1
+t10 := #1
+t8 := t9 - t10
+t11 := v2
+t12 := v4
+t13 := v3
+ARG t13
+ARG t12
+ARG t11
+ARG t8
+t0 := CALL f1
+t17 := v2
+t18 := #1000000
+t15 := t17 * t18
+t16 := v4
+t14 := t15 + t16
+WRITE t14
+t0 := #0
+t20 := v1
+t21 := #1
+t19 := t20 - t21
+t22 := v3
+t23 := v2
+t24 := v4
+ARG t24
+ARG t23
+ARG t22
+ARG t19
+t0 := CALL f1
+LABEL l3 :
+t25 := #0
+RETURN t25
+FUNCTION main :
+t26 := #3
+v5 := t26
+t27 := v5
+t28 := #1
+t29 := #2
+t30 := #3
+ARG t30
+ARG t29
+ARG t28
+ARG t27
+t0 := CALL f1
+t31 := #0
+RETURN t31
