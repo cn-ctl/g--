@@ -150,7 +150,8 @@ while {
      printf("RELOP:%s\n",yytext);
      #endif
      YY_RET_VAL(RELOP)
-     yylval->val_relop = yytext;
+     yylval->val_relop = (char*)malloc(sizeof(char)*yyleng+1);
+     strcpy(yylval->val_relop,yytext);
      return RELOP;
 }
 "+" {

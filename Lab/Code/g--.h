@@ -63,6 +63,7 @@ enum yysymbol_kind_t
 };
 typedef enum yysymbol_kind_t yysymbol_kind_t;
 
+//DS4typeCheck
 typedef struct Type_* Type;
 typedef struct FieldList_* FieldList;
 typedef struct ParaList_* ParaList;
@@ -103,7 +104,67 @@ struct IDnode_
   Type type;
   IDnode next;
 };
+//DS4IR
+typedef struct Operand_* Operand;
+struct Operand_ {
+  enum { VARIABLE, CONSTANT, ADDRESS, REFER } kind;
+  union {
+    char* var_name;
+    int value;
+  } u;
+};
 
+typedef struct varIDnode_* varIDnode;
+struct varIDnode_
+{
+  char* name;
+  char* nickName;
+  
+  varIDnode next;
+};
+
+typedef struct fieldIDnode_* fieldIDnode;
+struct fieldIDnode_
+{
+  char* name;
+
+  int position;//field position
+  
+  fieldIDnode next;
+};
+
+typedef struct arrayIDnode_* arrayIDnode;
+struct arrayIDnode_
+{
+  char* name;
+
+  int elem_size;//elem size of array
+  
+  arrayIDnode next;
+};
+
+struct ArgList
+{
+  char* name;
+  struct ArgList* next;
+};
+
+struct InterCode
+{
+  enum { ASSIGN, ADD, SUB, MUL, DIVV, LABEL, GOTO, RET,
+   READ, WRITE, ARG,FUNC, PARAM, DEC,CALL,  IFGOTO  } kind;
+  union {
+    struct { Operand right, left; } assign;
+    struct { Operand result, op1, op2; } binop;
+    char* label;
+    struct { Operand left,right;char* op,*label;}ifgoto;
+  } u;
+};
+
+struct InterCodes { struct InterCode code; struct InterCodes *prev, *next; };
+
+
+//YYNODE
 typedef struct YYNODE{
   int YYTYPE;
   int TG;// 标记该node是词法还是语法单元

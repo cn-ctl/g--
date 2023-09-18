@@ -1,10 +1,11 @@
-#include<stdio.h>
 #include "syntax.tab.h"
 #include "g--.h"
 //#define DEBUG
 IDnode IDlist[0x3fff],decFuncList;
 
-unsigned int hash(char* name){
+bool hasError = false;
+
+static unsigned int hash(char* name){
     unsigned int val = 0, i;
     for(;*name;++name){
         val = (val<<2)+*name;
@@ -12,7 +13,6 @@ unsigned int hash(char* name){
     }
     return val;
 }
-
 
 bool checkAssign(Type left,Type right){
     if(left == NULL||right == NULL||left->kind!=right->kind){
@@ -225,8 +225,10 @@ void typeChecker(struct YYNODE* root){
         if(son->YYTYPE==RETURN){
             son = son->next;
             typeChecker(son);
-            if(!checkAssign(son->type,root->returnType))
+            if(!checkAssign(son->type,root->returnType)){
+                hasError = true;
                 printf("Error type 8 at Line %d: Type mismatched for return.\n",root->first_line);
+            }
             son = son->next->next;
             break;
         }else{
@@ -245,6 +247,7 @@ void typeChecker(struct YYNODE* root){
         typeChecker(son);
         if(son->next){
             if(root->type&&root->type->belongingStruct){
+                hasError = true;
                 printf("Error type 15 at Line %d: initailing field while defining structure.\n",root->first_line);
                 son = son->next->next->next;
                 break;
@@ -253,8 +256,10 @@ void typeChecker(struct YYNODE* root){
             son = son->next->next;
             typeChecker(son);
             Type right = son->type;
-            if(!checkAssign(left,right))
+            if(!checkAssign(left,right)){
+                hasError = true;
                 printf("Error type 5 at Line %d: Type mismatched for assignment.\n",root->first_line);
+            }
         }
         son=son->next;
         break;
@@ -367,6 +372,7 @@ void typeChecker(struct YYNODE* root){
             case ASSIGNOP:
                 typeChecker(son);
                 if(!son->type||!son->left){
+                    hasError = true;
                     printf("Error type 6 at Line %d: The left-hand side of an assignment must be a variable.\n",root->first_line);
                     son = son->next->next;
                     break;;
@@ -375,8 +381,10 @@ void typeChecker(struct YYNODE* root){
                 son = son->next->next;
                 typeChecker(son);
                 rightType = son->type;
-                if(!checkAssign(leftType,rightType))
+                if(!checkAssign(leftType,rightType)){
+                    hasError = true;
                     printf("Error type 5 at Line %d: Type mismatched for assignment.\n",root->first_line);
+                }
                 root->type = rightType;
                 root->left = true;
                 break;
@@ -386,8 +394,10 @@ void typeChecker(struct YYNODE* root){
                 son = son->next->next;
                 typeChecker(son);
                 rightType = son->type;
-                if(!leftType||!rightType||leftType->kind!=BASIC||leftType->basic!=INT||rightType->kind!=BASIC||rightType->basic!=INT)
+                if(!leftType||!rightType||leftType->kind!=BASIC||leftType->basic!=INT||rightType->kind!=BASIC||rightType->basic!=INT){
+                    hasError = true;
                     printf("Error type 7 at Line %d: Type mismatched for operands.\n",root->first_line);
+                }
                 root->type = son->type;
                 root->kind = num;
                 root->left = 0;
@@ -398,8 +408,10 @@ void typeChecker(struct YYNODE* root){
                 son = son->next->next;
                 typeChecker(son);
                 rightType = son->type;
-                if(!leftType||!rightType||leftType->kind!=BASIC||rightType->kind!=BASIC||rightType->basic!=leftType->basic)
+                if(!leftType||!rightType||leftType->kind!=BASIC||rightType->kind!=BASIC||rightType->basic!=leftType->basic){
+                    hasError = true;
                     printf("Error type 7 at Line %d: Type mismatched for operands.\n",root->first_line);
+                }
                 root->type = son->type;
                 root->kind = num;
                 root->left = 0;
@@ -408,11 +420,13 @@ void typeChecker(struct YYNODE* root){
                 typeChecker(son->next);
                 
                 if(son->YYTYPE == NOT&&(!son->next->type||son->next->type->kind!=BASIC||son->next->type->basic!=INT)){{
+                    hasError = true;
                     son=son->next;
                     printf("Error type 7 at Line %d: Type mismatched for operands.\n",root->first_line);
                     break;
                 }
                 }else if(!son->next->type||son->YYTYPE == MINUS&&son->next->type->kind!=BASIC){
+                    hasError = true;
                     son=son->next;
                     printf("Error type 7 at Line %d: Type mismatched for operands.\n",root->first_line);
                     break;
@@ -434,8 +448,10 @@ void typeChecker(struct YYNODE* root){
                 rightType = son->type;
                 if(!rightType)
                     break;
-                if(leftType->kind!=BASIC||rightType->kind!=BASIC||rightType->basic!=leftType->basic)
+                if(leftType->kind!=BASIC||rightType->kind!=BASIC||rightType->basic!=leftType->basic){
+                    hasError = true;
                     printf("Error type 7 at Line %d: Type mismatched for operands.\n",root->first_line);
+                }
                 root->type = intType;
                 root->kind = num;
                 root->left = 0;
@@ -443,6 +459,7 @@ void typeChecker(struct YYNODE* root){
             case DOT:
                 typeChecker(son);
                 if(!son->type||son->type->kind != STRUCTURE){
+                    hasError = true;
                     printf("Error type 13 at Line %d: Illegal use of \".\".\n", root->first_line);
                     while(son->next)
                         son=son->next;
@@ -458,14 +475,17 @@ void typeChecker(struct YYNODE* root){
                     }
                     thisField = thisField->next;
                 }
-                if(!thisField)
+                if(!thisField){
+                    hasError = true;
                     printf("Error type 14 at Line %d: Non-existent field \"%s\".\n",root->first_line,son->val_ID);
+                }
                 break;
             case LP:
                 son->kind = function;
                 root->left = 0;
                 typeChecker(son);
                 if(!son->type||son->type->kind != FUNCTION){
+                    hasError = true;
                     printf("Error type 11 at Line %d: \"%s\" is not a function.\n",root->first_line,son->val_ID);
                     son = son->next->next;
                     break;
@@ -483,6 +503,7 @@ void typeChecker(struct YYNODE* root){
                 }
                 son->type->func.argIndex = tempIndex;
                 if(matchArg&&matchArg->next!=NULL){
+                    hasError = true;
                     printf("Error type 9 at Line %d: lack of args\n",root->first_line);
                 }
                 break;
@@ -490,6 +511,7 @@ void typeChecker(struct YYNODE* root){
                 typeChecker(son);
                 leftType = son->type;
                 if(!leftType||leftType->kind!=ARRAY){
+                    hasError = true;
                     printf("Error type 10 at Line %d: %s is not an array.\n",root->first_line,son->val_ID);
                     while(son->next)
                         son=son->next;
@@ -500,6 +522,7 @@ void typeChecker(struct YYNODE* root){
                 son = son->next->next;
                 typeChecker(son);
                 if(!son->type||son->type->kind!=BASIC||son->type->basic!=INT){
+                    hasError = true;
                     printf("Error type 12 at Line %d: num in [] is not an integer.\n",root->first_line);
                 }
                 break;
@@ -528,9 +551,11 @@ void typeChecker(struct YYNODE* root){
             paraT = paraT->next;
         }
         if(!paraT){
+            hasError = true;
             printf("Error type 9 at Line %d: too many args\n",root->first_line);
         }
         else if(!checkAssign(son->type,paraT->type)){
+            hasError = true;
             printf("Error type 9 at Line %d: Function is not applicable for arguments at the %d arg\n",root->first_line,root->type->func.argIndex);
         }
         if(son->next){
@@ -545,6 +570,7 @@ void typeChecker(struct YYNODE* root){
         root->left = 1;
         if(root->type == NULL){
             if(!hasID(root->val_ID,hash(root->val_ID),&root->type,root->kind==function)){
+                hasError = true;
                 printf("Error type %d at Line %d: Undefined ID %s.\n", root->kind,root->first_line, root->val_ID);
                 root->type = intType;
             }
@@ -559,6 +585,7 @@ void typeChecker(struct YYNODE* root){
                 if(fieldOfS){
                     while(fieldOfS->next!=NULL){
                         if(strcmp(fieldOfS->name,thisField->name) == 0){
+                            hasError = true;
                             printf("Error type 15 at Line %d: Redefined field \"%s\".\n",root->first_line,thisField->name);
                             free(thisField);
                             #ifdef DEBUG
@@ -569,6 +596,7 @@ void typeChecker(struct YYNODE* root){
                         fieldOfS = fieldOfS->next;
                     }
                     if(strcmp(fieldOfS->name,thisField->name) == 0){
+                        hasError = true;
                         printf("Error type 15 at Line %d: Redefined field \"%s\".\n",root->first_line,thisField->name);
                         free(thisField);
                         break;
@@ -580,10 +608,12 @@ void typeChecker(struct YYNODE* root){
             }
             else if(!addID(root->val_ID,hash(root->val_ID),root->type)){
                 if(root->type->kind==FUNCTION&&root->type->dec){
+                    hasError = true;
                     printf("Error type 19 at Line %d: Inconsistent declaration of function \"%s\".\n",root->first_line, root->val_ID);
                 }else
                 {
                     int errorType = root->kind<=2?(root->kind+2):16;
+                    hasError = true;
                     printf("Error type %d at Line %d: Redefined ID %s.\n", errorType,root->first_line, root->val_ID);
                 }
             }
@@ -602,7 +632,7 @@ void typeChecker(struct YYNODE* root){
     #endif
 }
 
-void typeCheck(struct YYNODE* root){
+bool typeCheck(struct YYNODE* root){
     intType = (Type)malloc(sizeof(struct Type_));
     intType->kind=BASIC;
     intType->basic=INT;
@@ -611,12 +641,43 @@ void typeCheck(struct YYNODE* root){
     floatType->kind=BASIC;
     floatType->basic=FLOAT;
     floatType->belongingStruct =NULL;
+
+    //forIR,add2func
+    Type readType = (Type)malloc(sizeof(struct Type_));
+    readType->kind=FUNCTION;
+    readType->func.ret = intType;
+    readType->func.para = NULL;
+    readType->func.argIndex = 0;
+    readType->func.paraNum = 0;
+    readType->dec = 0;
+    readType->belongingStruct = NULL;
+    static char readID[5] = "read";
+    addID(readID,hash(readID), readType);
+
+    Type writeType = (Type)malloc(sizeof(struct Type_));
+    writeType->kind=FUNCTION;
+    writeType->func.ret = intType;
+    ParaList para = (ParaList)malloc(sizeof(struct ParaList_));
+    para->type = intType;
+    para->name = "writeArg";
+    para->next = NULL;
+    writeType->func.para = para;
+    writeType->func.argIndex = 0;
+    writeType->func.paraNum = 1;
+    writeType->dec = 0;
+    writeType->belongingStruct = NULL;
+    static char writeID[6] = "write";
+    addID(writeID,hash(writeID), writeType);
+    /////////
+
     typeChecker(root);
     IDnode t = decFuncList;
     while(t){
         if(t->type->dec){
+            hasError = true;
             printf("Error type 18 at Line %d: Undefined function \"%s\".\n",t->type->dec,t->name);
         }
         t = t->next;
     }
+    return !hasError;
 }
