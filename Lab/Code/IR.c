@@ -1,6 +1,6 @@
 #include "syntax.tab.h"
 #include "g--.h"
-#define LAB4
+//#define LAB4
 //#define DEBUGLAB4
 #define new(obj) (struct obj *)malloc(sizeof(struct obj))
 #define newOp (Operand)malloc(sizeof(struct Operand_))

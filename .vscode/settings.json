@@ -14,6 +14,10 @@
         "tuple": "c",
         "utility": "c",
         "*.tcc": "c",
-        "*.cmm": "c"
+        "*.cmm": "c",
+        "vector": "c",
+        "string_view": "c",
+        "initializer_list": "c",
+        "stddef.h": "c"
     }
 }
